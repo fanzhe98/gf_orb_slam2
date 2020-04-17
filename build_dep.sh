@@ -1,4 +1,4 @@
-export DEPENDENCIES_DIR=/mnt/DATA/SDK/
+export DEPENDENCIES_DIR=/tmp/SDK
 
 mkdir -p ${DEPENDENCIES_DIR}
 cd ${DEPENDENCIES_DIR}
@@ -39,16 +39,6 @@ cmake .. -DCMAKE_INSTALL_PREFIX:PATH="/opt/eigen33" -DCMAKE_BUILD_TYPE:STRING="R
 make -j4
 sudo make install
 
-# # build opencv2
-# cd ${DEPENDENCIES_DIR}
-# wget https://github.com/opencv/opencv/archive/2.4.13.6.tar.gz
-# tar xf 2.4.13.6.tar.gz
-# cd ${DEPENDENCIES_DIR}/opencv-2.4.13.6
-# mkdir build
-# cd build
-# cmake .. -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv2" -DBUILD_TBB:BOOL="1" -DWITH_CUFFT:BOOL="0" -DWITH_TBB:BOOL="1" -DWITH_CUDA:BOOL="0" -DCUDA_HOST_COMPILATION_CPP:BOOL="0" -DCMAKE_BUILD_TYPE:STRING="Release" -DWITH_OPENMP:BOOL="1" -DCUDA_PROPAGATE_HOST_FLAGS:BOOL="0" -DCUDA_64_BIT_DEVICE_CODE:BOOL="0" -DCUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE:BOOL="0" -DBUILD_opencv_gpu:BOOL="0" 
-# make -j
-# sudo make install
 
 # build opencv 3.4
 cd ${DEPENDENCIES_DIR}
