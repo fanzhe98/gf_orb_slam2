@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <include file="$(find mynt_eye_ros_wrapper/launch/mynteye.launch"/>
+    <include file="$(find gf_orb_slam2)/launch/ros_stereo.launch"/>
+</launch>

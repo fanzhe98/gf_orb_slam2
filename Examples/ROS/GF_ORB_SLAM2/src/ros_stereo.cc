@@ -33,6 +33,7 @@
 #include <opencv2/core/core.hpp>
 #include "../../../../include/System.h"
 #include "../../../../include/MapPublisher.h"
+#include"../../../include/MapPoint.h"
 
 #include "nav_msgs/Odometry.h"
 #include "nav_msgs/Path.h"
@@ -40,8 +41,12 @@
 #include "tf/transform_datatypes.h"
 #include <tf/transform_broadcaster.h>
 
-//
-//#include "path_smoothing_ros/cubic_spline_interpolator.h"
+#include <tf/transform_broadcaster.h>
+#include <geometry_msgs/PoseStamped.h>
+#include "sensor_msgs/PointCloud.h"
+#include "sensor_msgs/PointCloud2.h"
+#include "sensor_msgs/point_cloud_conversion.h"
+
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <ros/publisher.h>
 
@@ -76,7 +81,9 @@ public:
     cv::Mat Tmat;
 
     ros::Publisher mpCameraPosePublisher, mpCameraPoseInIMUPublisher;
-    //    ros::Publisher mpDensePathPub;
+
+    ros::Publisher cloud_pub;
+
     
 #ifdef MAP_PUBLISH
     size_t mnMapRefreshCounter;
@@ -86,7 +93,7 @@ public:
 #ifdef FRAME_WITH_INFO_PUBLISH
     ros::Publisher mpFrameWithInfoPublisher;
 #endif
-    
+    std::string tf_from, tf_to;
 };
 
 int main(int argc, char **argv)
@@ -211,6 +218,9 @@ int main(int argc, char **argv)
     // figure out the proper queue size
     igb.mpCameraPosePublisher = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("ORB_SLAM/camera_pose", 100);
     igb.mpCameraPoseInIMUPublisher = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("ORB_SLAM/camera_pose_in_imu", 100);
+    igb.cloud_pub  = nh.advertise<sensor_msgs::PointCloud2>("ORB_SLAM/pointcloud", 10);
+    nh.param<std::string>("/orbslam/tf_from", igb.tf_from, "/odom");
+    nh.param<std::string>("/orbslam/tf_to", igb.tf_to, "/base");
 
 #ifdef FRAME_WITH_INFO_PUBLISH
     igb.mpFrameWithInfoPublisher = nh.advertise<sensor_msgs::Image>("ORB_SLAM/frame_with_info", 100);
@@ -366,14 +376,7 @@ double latency_trans = ros::Time::now().toSec() - msgLeft->header.stamp.toSec();
 	cv::Mat imLeft, imRight;
 	cv::remap(cv_ptrLeft->image,imLeft,M1l,M2l,cv::INTER_LINEAR);
 	cv::remap(cv_ptrRight->image,imRight,M1r,M2r,cv::INTER_LINEAR);
-	//        cv::Mat out;
-	//        cv::hconcat(imLeft, imRight, out);
-	//        cv::imwrite( "./stereo_input.png", out );
-
 	pose = mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec());
-	//        cv::Mat image_match;
-	//        mpSLAM->mpTracker->mCurrentFrame.plotStereoMatching(imLeft, imRight, image_match);
-	//        cv::imwrite( "./stereo_matching.png", image_match );
     }
     else
     {
@@ -387,66 +390,6 @@ double latency_total = ros::Time::now().toSec() - cv_ptrLeft->header.stamp.toSec
 // ROS_INFO("ORB-SLAM Tracking Latency: %.03f sec", ros::Time::now().toSec() - cv_ptrLeft->header.stamp.toSec());
 // ROS_INFO("Image Transmision Latency: %.03f sec; Total Tracking Latency: %.03f sec", latency_trans, latency_total);
 ROS_INFO("Pose Tracking Latency: %.03f sec", latency_total - latency_trans);
-
-/*
-    // std::cout << "broadcast pose!" << std::endl;
-
-    /// broadcast tf
-    // global left handed coordinate system 
-    static cv::Mat pose_prev = cv::Mat::eye(4,4, CV_32F);
-    static cv::Mat world_lh = cv::Mat::eye(4,4, CV_32F);
-    // matrix to flip signs of sinus in rotation matrix, not sure why we need to do that
-    static const cv::Mat flipSign = (cv::Mat_<float>(4,4) <<   1,-1,-1, 1,
-				    -1, 1,-1, 1,
-				    -1,-1, 1, 1,
-				    1, 1, 1, 1);
-
-    //prev_pose * T = pose
-    cv::Mat translation =  (pose * pose_prev.inv()).mul(flipSign);
-    world_lh = world_lh * translation;
-    pose_prev = pose.clone();
-
-    tf::Matrix3x3 tf3d;
-    tf3d.setValue(pose.at<float>(0,0), pose.at<float>(0,1), pose.at<float>(0,2),
-		  pose.at<float>(1,0), pose.at<float>(1,1), pose.at<float>(1,2),
-		  pose.at<float>(2,0), pose.at<float>(2,1), pose.at<float>(2,2));
-
-    tf::Vector3 cameraTranslation_rh( world_lh.at<float>(0,3),world_lh.at<float>(1,3), - world_lh.at<float>(2,3) );
-
-    //rotate 270deg about x and 270deg about x to get ENU: x forward, y left, z up
-    const tf::Matrix3x3 rotation270degXZ(   0, 1, 0,
-					    0, 0, 1,
-					    1, 0, 0);
-
-    static tf::TransformBroadcaster br;
-
-    tf::Matrix3x3 globalRotation_rh = tf3d;
-    tf::Vector3 globalTranslation_rh = cameraTranslation_rh * rotation270degXZ;
-
-    tf::Quaternion tfqt;
-    globalRotation_rh.getRotation(tfqt);
-
-    double aux = tfqt[0];
-    tfqt[0]=-tfqt[2];
-    tfqt[2]=tfqt[1];
-    tfqt[1]=aux;
-
-    tf::Transform transform;
-    transform.setOrigin(globalTranslation_rh);
-    transform.setRotation(tfqt);
-
-    br.sendTransform(tf::StampedTransform(transform, cv_ptrLeft->header.stamp, "map", "camera_pose"));
-  */
-    
-    
-    /// broadcast campose pose message
-    // camera pose
-    /*
-	tf::Matrix3x3 R( 0,  0,  1,
-			-1,  0,  0,
-			0, -1,  0);
-	tf::Transform T ( R * tf::Matrix3x3( transform.getRotation() ), R * transform.getOrigin() );
-  */
 
     cv::Mat Rwc = pose.rowRange(0,3).colRange(0,3).t();
     cv::Mat twc = -Rwc*pose.rowRange(0,3).col(3);
@@ -466,15 +409,39 @@ ROS_INFO("Pose Tracking Latency: %.03f sec", latency_total - latency_trans);
     camera_pose.orientation = gmTwc.rotation;
     
     geometry_msgs::PoseWithCovarianceStamped camera_odom;
-    camera_odom.header.frame_id = "odom";
+    camera_odom.header.frame_id = tf_from;
     camera_odom.header.stamp = cv_ptrLeft->header.stamp;
     camera_odom.pose.pose = camera_pose;
-    
     mpCameraPosePublisher.publish(camera_odom);
 
-//
-// by default, an additional transform is applied to make camera pose and body frame aligned
-// which is assumed in msf
+
+    static tf::TransformBroadcaster br;
+    br.sendTransform(tf::StampedTransform(tfTcw, camera_odom.header.stamp, tf_from, tf_to));
+
+
+    sensor_msgs::PointCloud cloud;
+    cloud.header.frame_id = tf_from;
+    cloud.header.stamp = msgLeft->header.stamp;
+    std::vector<geometry_msgs::Point32> geo_points;
+    std::vector<ORB_SLAM2::MapPoint*> points = mpSLAM->GetTrackedMapPoints();
+    for (std::vector<int>::size_type i = 0; i != points.size(); i++) {
+	    if (points[i]) {
+		    cv::Mat coords = points[i]->GetWorldPos();
+		    geometry_msgs::Point32 pt;
+		    pt.x = coords.at<float>(0);
+		    pt.y = coords.at<float>(1);
+		    pt.z = coords.at<float>(2);
+		    geo_points.push_back(pt);
+	    } 
+    }
+    cloud.points = geo_points;
+
+    sensor_msgs::PointCloud2 cloudp;
+    sensor_msgs::convertPointCloudToPointCloud2(cloud, cloudp);
+    cloudp.header = cloud.header;
+    cloud_pub.publish(cloudp);
+
+
 #ifdef INIT_WITH_ARUCHO
     tf::Matrix3x3 Ric(   0, -1, 0,
 			    0, 0, -1,
@@ -506,32 +473,6 @@ ROS_INFO("Pose Tracking Latency: %.03f sec", latency_total - latency_trans);
     
 	mpCameraPoseInIMUPublisher.publish(camera_odom_in_imu);
 
-/*
-    tf::Matrix3x3 Ric( 0,  0,  1,
-			-1,  0,  0,
-			0,  -1,  0);
-    
-    tf::Matrix3x3 Rbi( 0,  -1,  0,
-			0,  0,  -1,
-			1,  0,  0);
-    
-	tf::Transform tfTiw ( Ric * tf::Matrix3x3( tfTcw.getRotation() ) * Rbi, Ric * tfTcw.getOrigin() );
-    geometry_msgs::Transform gmTwi;
-	tf::transformTFToMsg(tfTiw, gmTwi);
-	
-	geometry_msgs::Pose camera_pose_in_imu;
-	camera_pose_in_imu.position.x = gmTwi.translation.x;
-	camera_pose_in_imu.position.y = gmTwi.translation.y;
-	camera_pose_in_imu.position.z = gmTwi.translation.z;
-	camera_pose_in_imu.orientation = gmTwi.rotation;
-    
-    geometry_msgs::PoseWithCovarianceStamped camera_odom_in_imu;
-	camera_odom_in_imu.header.frame_id = "odom";
-	camera_odom_in_imu.header.stamp = cv_ptrLeft->header.stamp;
-	camera_odom_in_imu.pose.pose = camera_pose_in_imu;
-    
-	mpCameraPoseInIMUPublisher.publish(camera_odom_in_imu);
-*/
     
 #ifdef FRAME_WITH_INFO_PUBLISH
     if (mpSLAM != NULL && mpSLAM->mpFrameDrawer != NULL) {
