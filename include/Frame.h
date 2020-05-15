@@ -47,7 +47,7 @@
 
 
 // For map reuse and update
-// #define ENABLE_MAP_IO
+#define ENABLE_MAP_IO
 
 
 // For anticipation in good graph

@@ -101,7 +101,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "Stereo");
     ros::start();
 
-    if(argc != 10)
+    if(argc != 11)
     {
         cerr << endl << "Usage: rosrun gf_orb_slam2 Stereo path_to_vocabulary path_to_settings budget_per_frame "
              << " do_rectify do_viz "
@@ -135,11 +135,14 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef ENABLE_MAP_IO
-    SLAM.LoadMap(std::string(argv[9]));
+    if (std::string(argv[10]) == "true")
+    {
+        SLAM.LoadMap(std::string(argv[9]));
     // SLAM.LoadMap(std::string(argv[8]) + "_Map/");
     //
-    SLAM.ForceRelocTracker();
+        SLAM.ForceRelocTracker();
     // SLAM.ForceInitTracker();
+    }
 #endif
 
     ImageGrabber igb(&SLAM);
@@ -246,7 +249,7 @@ int main(int argc, char **argv)
     //
     // SLAM.SaveLmkLog( std::string(argv[8]) + "_Log_lmk.txt" );
 
-/*
+
 #ifdef ENABLE_MAP_IO
 
 // #ifdef MAP_PUBLISH
@@ -259,7 +262,7 @@ int main(int argc, char **argv)
   // SLAM.SaveMap(std::string(argv[8]) + "_Map/");
   
 #endif
-*/
+
 
     std::cout << "Finished saving!" << std::endl;
 

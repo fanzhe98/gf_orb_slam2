@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-    <node pkg="gf_orb_slam2" type="Stereo" name="orbslam" args="/home/fanzhe/ORB_SLAM2/Vocabulary/ORBvoc.txt /home/fanzhe/ORB_Data/MYNT_yaml/mynteye_stereo_v3.yaml 1000 false true /mynteye/left_rect/image_rect /mynteye/right_rect/image_rect /home/fanzhe/orbtest/traj /home/fanzhe/orbtest/map"
+    <node pkg="gf_orb_slam2" type="Stereo" name="orbslam" args="/home/fanzhe/ORB_SLAM2/Vocabulary/ORBvoc.txt /home/fanzhe/ORB_Data/MYNT_yaml/mynteye_stereo_v3.yaml 1000 false true /mynteye/left_rect/image_rect /mynteye/right_rect/image_rect /home/fanzhe/orbtest/traj /home/fanzhe/orbtest/map true"
     output="screen">
         <param name="/tf_from" type="string" value="/odom_camera"/>
         <param name="/tf_to" type="string" value="/camera_optical"/>
     </node>
 
-    <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 /map /odom 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 /map /odom_ 100"/>
+    <node pkg="map_odom_aligner" type="map_odom_aligner" name="aligner_broadcaster" output="screen"/>
 
-    <node pkg="tf" type="static_transform_publisher" name="link2_broadcaster" args="0 0 0.5 -1.57 0 -1.57 /odom /odom_camera 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="link2_broadcaster" args="0 0 0.5 -1.57 0 -1.57 /odom_ /odom_camera 100"/>
 
     <!-- <node pkg="tf" type="static_transform_publisher" name="link3_broadcaster" args="0 0 0 0 -1.57 1.57 /camera_optical /camera_link1 100"/> -->
 
@@ -17,4 +18,4 @@
 
     <node pkg="tf" type="static_transform_publisher" name="link5_broadcaster" args="0 0 0 0 0 0 /camera_optical /mynteye_link 100"/>
 
-</launch>
+</launch>               
