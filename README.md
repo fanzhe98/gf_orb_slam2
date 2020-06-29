@@ -1,4 +1,6 @@
-# A cost-efficient, heavily-modified ORB-SLAM2
+![](https://github.com/ivalab/demo_gif/blob/master/office_slam_demo.gif)
+
+# A cost-efficient, heavily-modified ORB-SLAM2 (tested on Ubuntu 16.04 + ROS Kinetic)
 
 The cost-efficiency of visual SLAM is crucial for target applications in Robotics and VR/AR.  One principal enforced in this project is to persue better computation-performance trade-off in both front-end and back-end of visual SLAM.  To that end, three major algorithmic innovations are integrated to ORB-SLAM 2:
 
@@ -63,13 +65,25 @@ We recommend converting the ORB vocabulary to binary format, by calling
 
     ./tools/bin_vocabulary
 
-To run GF-ORB-SLAM2 on public benchmarks, please refer to batch evaluation scripts at folder 
+### Open-loop Evaluation
 
-    batch_script
+To run GF-ORB-SLAM2 on open-loop, e.g., as a standalone running on public benchmarks, make sure the closed-loop macro `ENABLE_PLANNER_PREDICTION` at [include/Tracking.h](https://github.com/ivalab/gf_orb_slam2/tree/catkin/include/Tracking.h#L92) is commented out:
 
-or follow the example calls at **rosrun_cmd.md** for your own sensor / sequence. 
+    // #define ENABLE_PLANNER_PREDICTION
 
-Similar to original ORB-SLAM2, the camera parameters shall be provided in yaml format.  Some example configurations for public benchmarks are available at ORB_Data we just cloned.
+and refer to batch evaluation scripts at folder [batch_script](https://github.com/ivalab/gf_orb_slam2/tree/catkin/batch_scripts) as examples.
+
+You could also follow the example calls at **rosrun_cmd.md** for your own sensor / sequence.
+
+Similar to original ORB-SLAM2, the camera parameters shall be provided in yaml format.  Some example configurations for public benchmarks are available at `ORB_Data` we just cloned.
+
+### Closed-loop Evaluation
+
+To run GF-ORB-SLAM2 on closed-loop navigation tasks, e.g., as the state estimator of [gazebo_turtlebot_simulator](https://github.com/ivalab/gazebo_turtlebot_simulator), make sure the closed-loop macro `ENABLE_PLANNER_PREDICTION` at [include/Tracking.h](https://github.com/ivalab/gf_orb_slam2/tree/catkin/include/Tracking.h#L92) is uncommented:
+
+    #define ENABLE_PLANNER_PREDICTION
+
+and refer to closed-loop evaluation scripts at [gazebo_turtlebot_simulator/script](https://github.com/ivalab/gazebo_turtlebot_simulator/tree/master/script) on how to config the evaluation.
 
 ## References
 
